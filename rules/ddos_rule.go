@@ -8,15 +8,15 @@ import (
 	"time"
 )
 
-// DDoSRule implements a rule to detect DDoS attempts.
+// DDoSRule detects potential DDoS attempts based on request frequency.
 type DDoSRule struct {
-	RequestLog     map[string][]time.Time // Key: Source IP, Value: Slice of timestamps for each request
-	Threshold      int                    // Maximum allowed requests from a single IP within the time window
-	WindowDuration time.Duration          // Time window for counting requests
-	mu             sync.Mutex             // Mutex to ensure thread-safe access to RequestLog
+	sync.Mutex                            // Ensures thread-safe access to RequestLog
+	RequestLog     map[string][]time.Time // Logs requests per Source IP
+	Threshold      int                    // Max allowed requests per IP within the time window
+	WindowDuration time.Duration          // Time window for evaluating requests
 }
 
-// NewDDoSRule creates a new instance of DDoSRule.
+// NewDDoSRule initializes a new DDoSRule with the given threshold and window duration.
 func NewDDoSRule(threshold int, windowDuration time.Duration) *DDoSRule {
 	return &DDoSRule{
 		RequestLog:     make(map[string][]time.Time),
@@ -25,30 +25,46 @@ func NewDDoSRule(threshold int, windowDuration time.Duration) *DDoSRule {
 	}
 }
 
-// Detect checks for potential DDoS attempts.
-func (rule *DDoSRule) Detect(packet *Packet) (isDetected bool, incidentType IncidentType, ip net.IP) {
+// Detect analyzes packets to detect potential DDoS attempts.
+// Returns a flag indicating if an attack is detected, the incident type, and the source IP.
+func (rule *DDoSRule) Detect(packet *Packet) (bool, IncidentType, net.IP) {
+	rule.Lock()
+	defer rule.Unlock()
 
 	srcIP := packet.SrcIP.String()
 	now := time.Now()
 
-	// Get the list of request timestamps for this IP
-	requests := rule.RequestLog[srcIP]
+	// Retrieve the request log for the source IP, initializing if necessary
+	requests := rule.getRequestLog(srcIP)
 
-	// Add the current request timestamp
+	// Clean up old requests outside the window duration
+	requests = rule.cleanOldRequests(requests, now)
+
+	// Add the new request timestamp
 	requests = append(requests, packet.Timestamp)
 
-	// Filter out requests that are older than the window duration
-	requests = utils.Filter[time.Time](requests, func(timestamp time.Time) bool {
-		return now.Sub(timestamp) < rule.WindowDuration
-	})
-
-	// Update the map with the filtered and updated request log
+	// Update the request log for this IP
 	rule.RequestLog[srcIP] = requests
 
-	// Check if the number of requests exceeds the threshold
+	// Detect if the request count exceeds the threshold
 	if len(requests) > rule.Threshold {
-		return true, DDoSAttack, packet.SrcIP // DDoS attempt detected
+		return true, DDoSAttack, packet.SrcIP
 	}
 
-	return false, -1, nil // No DDoS attempt detected
+	return false, -1, nil
+}
+
+// getRequestLog retrieves or initializes the request log for a given source IP.
+func (rule *DDoSRule) getRequestLog(srcIP string) []time.Time {
+	if requests, exists := rule.RequestLog[srcIP]; exists {
+		return requests
+	}
+	return []time.Time{}
+}
+
+// cleanOldRequests filters out requests older than the allowed window duration.
+func (rule *DDoSRule) cleanOldRequests(requests []time.Time, now time.Time) []time.Time {
+	return utils.Filter(requests, func(timestamp time.Time) bool {
+		return now.Sub(timestamp) < rule.WindowDuration
+	})
 }
