@@ -32,7 +32,7 @@ func NewPortScanningRule(threshold int, windowDuration time.Duration) *PortScann
 
 // Detect checks if the incoming packet triggers a port scanning detection.
 // Returns detection status, incident type, and the IP involved.
-func (rule *PortScanningRule) Detect(packet *Packet) (bool, *Incident) {
+func (rule *PortScanningRule) Detect(packet *Packet) []*Incident {
 	rule.Lock()
 	defer rule.Unlock()
 
@@ -54,10 +54,10 @@ func (rule *PortScanningRule) Detect(packet *Packet) (bool, *Incident) {
 
 	// Check if the number of attempts exceeds the threshold
 	if len(attempts) > rule.Threshold {
-		return true, NewIncident(packet.SrcIP, PortScanning, packet.Timestamp)
+		return []*Incident{NewIncident(packet.SrcIP, PortScanning, packet.Timestamp)}
 	}
 
-	return false, nil
+	return []*Incident{}
 }
 
 // getConnectionAttempts retrieves or initializes the slice of ConnectionAttempts for a given srcIP -> dstIP.

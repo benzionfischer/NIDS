@@ -44,8 +44,10 @@ func (n *NIDS) Start() {
 // ProcessPacket processes each captured packet.
 func (n *NIDS) ProcessPacket(packet *Packet) {
 	for _, rule := range n.Rules {
-		isDetected, incident := rule.Detect(packet)
-		if isDetected {
+		incidents := rule.Detect(packet)
+
+		// can return a list without incidents
+		for _, incident := range incidents {
 			n.Logger.LogIncident(incident)
 			n.AlertSystem.Notify(fmt.Sprintf("Incident detected at %s from IP %s with type: %s", packet.Timestamp, incident.IP, incident.Type))
 		}

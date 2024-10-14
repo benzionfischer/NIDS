@@ -6,5 +6,5 @@ import (
 
 // Rule is an interface representing a detection rule.
 type Rule interface {
-	Detect(packet *Packet) (isDetected bool, incident *Incident)
+	Detect(packet *Packet) []*Incident
 }

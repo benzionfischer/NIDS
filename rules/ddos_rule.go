@@ -26,7 +26,7 @@ func NewDDoSRule(threshold int, windowDuration time.Duration) *DDoSRule {
 
 // Detect analyzes packets to detect potential DDoS attempts.
 // Returns a flag indicating if an attack is detected, the incident type, and the source IP.
-func (rule *DDoSRule) Detect(packet *Packet) (bool, *Incident) {
+func (rule *DDoSRule) Detect(packet *Packet) []*Incident {
 	rule.Lock()
 	defer rule.Unlock()
 
@@ -47,10 +47,10 @@ func (rule *DDoSRule) Detect(packet *Packet) (bool, *Incident) {
 
 	// Detect if the request count exceeds the threshold
 	if len(requests) > rule.Threshold {
-		return true, NewIncident(packet.SrcIP, DDoSAttack, packet.Timestamp)
+		return []*Incident{NewIncident(packet.SrcIP, DDoSAttack, packet.Timestamp)}
 	}
 
-	return false, nil
+	return []*Incident{}
 }
 
 // getRequestLog retrieves or initializes the request log for a given source IP.
