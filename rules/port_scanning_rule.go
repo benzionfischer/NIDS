@@ -43,11 +43,11 @@ func (rule *PortScanningRule) Detect(packet *Packet) []*Incident {
 	// Initialize or retrieve connection attempts for the given srcIP -> dstIP
 	attempts := rule.getConnectionAttempts(srcIP, dstIP)
 
-	// Clean old connection attempts outside the window
-	attempts = rule.cleanOldAttempts(attempts, now)
-
 	// Update or add the current connection attempt for the destination port
 	attempts = rule.updateAttempt(attempts, packet.DstPort, packet.Timestamp)
+
+	// Clean old connection attempts outside the window
+	attempts = rule.cleanOldAttempts(attempts, now)
 
 	// Save the updated attempts back to the map
 	rule.ConnectionAttempts[srcIP][dstIP] = attempts
