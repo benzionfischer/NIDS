@@ -3,7 +3,6 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
-	"net"
 	"sync"
 	"time"
 )
@@ -33,7 +32,7 @@ func NewPortScanningRule(threshold int, windowDuration time.Duration) *PortScann
 
 // Detect checks if the incoming packet triggers a port scanning detection.
 // Returns detection status, incident type, and the IP involved.
-func (rule *PortScanningRule) Detect(packet *Packet) (bool, IncidentType, net.IP) {
+func (rule *PortScanningRule) Detect(packet *Packet) (bool, *Incident) {
 	rule.Lock()
 	defer rule.Unlock()
 
@@ -55,10 +54,10 @@ func (rule *PortScanningRule) Detect(packet *Packet) (bool, IncidentType, net.IP
 
 	// Check if the number of attempts exceeds the threshold
 	if len(attempts) > rule.Threshold {
-		return true, PortScanning, packet.SrcIP
+		return true, NewIncident(packet.SrcIP, PortScanning, packet.Timestamp)
 	}
 
-	return false, -1, nil
+	return false, nil
 }
 
 // getConnectionAttempts retrieves or initializes the slice of ConnectionAttempts for a given srcIP -> dstIP.

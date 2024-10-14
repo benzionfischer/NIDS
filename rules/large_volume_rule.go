@@ -3,7 +3,6 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
-	"net"
 	"sync"
 	"time"
 )
@@ -33,7 +32,7 @@ func NewLargeVolumeRule(threshold int, windowDuration time.Duration) *LargeVolum
 
 // Detect checks if the given packet causes a large data transfer.
 // It returns whether the detection is triggered, the type of incident, and the IP involved.
-func (rule *LargeVolumeRule) Detect(packet *Packet) (bool, IncidentType, net.IP) {
+func (rule *LargeVolumeRule) Detect(packet *Packet) (bool, *Incident) {
 	rule.mu.Lock()
 	defer rule.mu.Unlock()
 
@@ -58,11 +57,11 @@ func (rule *LargeVolumeRule) Detect(packet *Packet) (bool, IncidentType, net.IP)
 
 	// Check if the total volume exceeds the threshold
 	if totalVolume > rule.Threshold {
-		return true, LargeVolumeTraffic, packet.SrcIP
+		return true, NewIncident(packet.SrcIP, LargeVolumeTraffic, packet.Timestamp)
 	}
 
 	// No large transfer detected
-	return false, -1, nil
+	return false, nil
 }
 
 // getTransfers retrieves the list of data transfers for a given IP address.

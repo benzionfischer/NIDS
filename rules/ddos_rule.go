@@ -3,7 +3,6 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
-	"net"
 	"sync"
 	"time"
 )
@@ -27,7 +26,7 @@ func NewDDoSRule(threshold int, windowDuration time.Duration) *DDoSRule {
 
 // Detect analyzes packets to detect potential DDoS attempts.
 // Returns a flag indicating if an attack is detected, the incident type, and the source IP.
-func (rule *DDoSRule) Detect(packet *Packet) (bool, IncidentType, net.IP) {
+func (rule *DDoSRule) Detect(packet *Packet) (bool, *Incident) {
 	rule.Lock()
 	defer rule.Unlock()
 
@@ -48,10 +47,10 @@ func (rule *DDoSRule) Detect(packet *Packet) (bool, IncidentType, net.IP) {
 
 	// Detect if the request count exceeds the threshold
 	if len(requests) > rule.Threshold {
-		return true, DDoSAttack, packet.SrcIP
+		return true, NewIncident(packet.SrcIP, DDoSAttack, packet.Timestamp)
 	}
 
-	return false, -1, nil
+	return false, nil
 }
 
 // getRequestLog retrieves or initializes the request log for a given source IP.

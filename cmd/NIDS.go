@@ -6,7 +6,6 @@ import (
 	. "awesomeProject/model"
 	. "awesomeProject/rules"
 	"fmt"
-	"time"
 )
 
 // NIDS is the main class responsible for managing the detection system.
@@ -45,11 +44,10 @@ func (n *NIDS) Start() {
 // ProcessPacket processes each captured packet.
 func (n *NIDS) ProcessPacket(packet *Packet) {
 	for _, rule := range n.Rules {
-		isDetected, incidentType, ip := rule.Detect(packet)
+		isDetected, incident := rule.Detect(packet)
 		if isDetected {
-			n.Logger.LogIncident(time.Now(), ip, incidentType)
-			n.AlertSystem.Notify(fmt.Sprintf("Incident detected at %s from IP %s with type: %s", packet.Timestamp, ip, incidentType))
-			break
+			n.Logger.LogIncident(incident)
+			n.AlertSystem.Notify(fmt.Sprintf("Incident detected at %s from IP %s with type: %s", packet.Timestamp, incident.IP, incident.Type))
 		}
 	}
 }
