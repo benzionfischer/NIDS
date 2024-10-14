@@ -49,7 +49,7 @@ func (rule *LargeVolumeRule) Detect(packet *Packet) (isDetected bool, incidentTy
 	// Add the current data volume (assumed from packet size) to the list
 	transfers = append(transfers, DataTransfer{
 		Volume:    packet.Length, // assuming packet.Length gives you the data size in bytes
-		Timestamp: now,
+		Timestamp: packet.Timestamp,
 	})
 
 	// Filter out transfers that are older than the window duration
