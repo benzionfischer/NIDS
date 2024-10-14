@@ -385,3 +385,5 @@
 {"ip":"17.248.213.69","timestamp":"2024-10-14T19:34:49.49399+03:00","type":"Large Volume Traffic"}
 {"ip":"192.168.1.107","timestamp":"2024-10-14T19:34:51.706181+03:00","type":"Large Volume Traffic"}
 {"ip":"192.168.1.107","timestamp":"2024-10-14T19:34:52.602877+03:00","type":"Large Volume Traffic"}
+{"ip":"fe80::449:a0e0:eb1f:cd97","timestamp":"2024-10-14T19:45:32.629826+03:00","type":"Large Volume Traffic"}
+{"ip":"192.168.1.107","timestamp":"2024-10-14T19:45:34.069462+03:00","type":"Large Volume Traffic"}
