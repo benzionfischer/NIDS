@@ -63,6 +63,7 @@ func (sniffer *PacketSniffer) convertToPacketDTO(packet gopacket.Packet) *Packet
 		DstIP:     net.ParseIP(dstIP),
 		DstPort:   dstPort,
 		Length:    len(packet.Data()),
+		Payload:   string(packet.Data()), // Convert the byte slice to string for Payload
 	}
 }
 

@@ -30,6 +30,7 @@ func main() {
 			NewPortScanningRule(10, 30*time.Second),
 			NewDDoSRule(15, 30*time.Second),
 			NewLargeVolumeRule(10, 30*time.Second), // Adjust thresholds as needed
+			NewHttpVulnerabilityRule(),
 		},
 		&IncidentLogger{LogFile: logFile},
 		&AlertSystem{})

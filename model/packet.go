@@ -13,4 +13,5 @@ type Packet struct {
 	DstIP     net.IP
 	DstPort   string
 	Length    int
+	Payload   string
 }
