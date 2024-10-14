@@ -18,7 +18,8 @@ func main() {
 	}
 	defer logFile.Close()
 
-	packetSniffer, err := NewPacketSniffer("en0") // Change this to your network interface
+	device := "en0"                                // network interface
+	packetSniffer, err := NewPacketSniffer(device) // Change this to your network interface
 	if err != nil {
 		fmt.Println("Error initializing packet sniffer:", err)
 		return
