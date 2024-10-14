@@ -29,7 +29,7 @@ func NewNIDS(sniffer *PacketSniffer, rules []Rule, logger *IncidentLogger, alert
 
 // Start begins capturing packets and processing them concurrently.
 func (n *NIDS) Start() {
-	packetChan := make(chan *Packet, 100) // Buffered channel for packets
+	packetChan := make(chan *Packet, 100) // limit the number of go routines
 
 	// push packets to the channel
 	go func() {
