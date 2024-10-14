@@ -4,6 +4,7 @@ import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type DDoSRule struct {
 	RequestLog     map[string][]time.Time // Key: Source IP, Value: Slice of timestamps for each request
 	Threshold      int                    // Maximum allowed requests from a single IP within the time window
 	WindowDuration time.Duration          // Time window for counting requests
+	mu             sync.Mutex             // Mutex to ensure thread-safe access to RequestLog
 }
 
 // NewDDoSRule creates a new instance of DDoSRule.
