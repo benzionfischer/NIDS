@@ -27,24 +27,29 @@ func NewNIDS(sniffer *PacketSniffer, rules []Rule, logger *IncidentLogger, alert
 	}
 }
 
+// Start begins capturing packets and processing them concurrently.
 func (n *NIDS) Start() {
-	for {
-		packet, err := n.PacketSniffer.Capture()
-		if err != nil {
-			fmt.Println("Error capturing packet:", err)
-			continue
-		}
-		n.ProcessPacket(packet)
+	packetChan := make(chan *Packet, 100) // Buffered channel for packets
+
+	// push packets to the channel
+	go func() {
+		n.PacketSniffer.Capture(packetChan)
+	}()
+
+	// for each packet create go routine
+	for packet := range packetChan {
+		go n.ProcessPacket(packet)
 	}
 }
 
+// ProcessPacket processes each captured packet.
 func (n *NIDS) ProcessPacket(packet *Packet) {
 	for _, rule := range n.Rules {
 		isDetected, incidentType, ip := rule.Detect(packet)
 		if isDetected {
-			n.Logger.LogIncident(time.Now(), ip, incidentType) // Use the srcIP returned from the rule
+			n.Logger.LogIncident(time.Now(), ip, incidentType)
 			n.AlertSystem.Notify(fmt.Sprintf("Incident detected at %s from IP %s with type: %s", packet.Timestamp, ip, incidentType))
-			break // Exit after the first rule is triggered
+			break
 		}
 	}
 }
