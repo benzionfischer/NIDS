@@ -3,6 +3,7 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -21,13 +22,16 @@ type LargeVolumeRule struct {
 	mu             sync.Mutex                // Mutex to ensure thread-safe access to DataLog
 }
 
-// NewLargeVolumeRule creates and initializes a new LargeVolumeRule instance.
+// NewLargeVolumeRule creates and initializes a new LargeVolumeRule and starts the cleanup job.
 func NewLargeVolumeRule(threshold int, windowDuration time.Duration) *LargeVolumeRule {
-	return &LargeVolumeRule{
+	rule := &LargeVolumeRule{
 		DataLog:        make(map[string][]DataTransfer),
 		Threshold:      threshold,
 		WindowDuration: windowDuration,
 	}
+
+	rule.startCleanUpJob() // Start the cleanup job
+	return rule
 }
 
 // Detect checks if the given packet causes a large data transfer.
@@ -94,4 +98,36 @@ func (rule *LargeVolumeRule) calculateTotalVolume(transfers []DataTransfer) int 
 		totalVolume += transfer.Volume
 	}
 	return totalVolume
+}
+
+// cleanUp removes outdated data transfers from the DataLog for each IP.
+func (rule *LargeVolumeRule) cleanUp() {
+	rule.mu.Lock()
+	defer rule.mu.Unlock()
+
+	fmt.Print("CleanUp activated for Large Volume rule\n")
+	now := time.Now()
+	for ip, transfers := range rule.DataLog {
+		// Clean old transfers for each IP
+		rule.DataLog[ip] = rule.cleanOldTransfers(transfers, now)
+
+		// If no valid transfers remain, delete the IP entry
+		if len(rule.DataLog[ip]) == 0 {
+			delete(rule.DataLog, ip)
+		}
+	}
+}
+
+// StartCleanUpJob starts a background goroutine that runs the cleanUp function every 30 minutes.
+func (rule *LargeVolumeRule) startCleanUpJob() {
+	ticker := time.NewTicker(30 * time.Minute) // Ticker triggers every 30 minutes
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				rule.cleanUp() // Call the cleanUp function on every tick
+			}
+		}
+	}()
 }

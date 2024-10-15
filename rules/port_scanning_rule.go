@@ -3,6 +3,7 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -23,11 +24,14 @@ type PortScanningRule struct {
 
 // NewPortScanningRule initializes a new PortScanningRule instance.
 func NewPortScanningRule(threshold int, windowDuration time.Duration) *PortScanningRule {
-	return &PortScanningRule{
+	rule := &PortScanningRule{
 		ConnectionAttempts: make(map[string]map[string][]ConnectionAttempt),
 		Threshold:          threshold,
 		WindowDuration:     windowDuration,
 	}
+
+	rule.startCleanUpJob()
+	return rule
 }
 
 // Detect checks if the incoming packet triggers a port scanning detection.
@@ -98,6 +102,50 @@ func (rule *PortScanningRule) updateAttempt(attempts []ConnectionAttempt, port s
 	return attempts
 }
 
-//func (rule *PortScanningRule) CleanUp() {
-//	Add cleanup function!!!
-//}
+// cleanUp removes outdated connection attempts and prunes empty entries from the ConnectionAttempts map.
+// It iterates over all source IPs and destination IPs to remove attempts older than the sliding window.
+// If no attempts remain for a srcIP->dstIP pair, it deletes the entire entry.
+func (rule *PortScanningRule) cleanUp() {
+	rule.Lock()
+	defer rule.Unlock()
+
+	fmt.Print("CleanUp activated for PortScanningRule\n")
+
+	now := time.Now()
+
+	// Iterate over all source IPs
+	for srcIP, dstMap := range rule.ConnectionAttempts {
+		// Iterate over all destination IPs for the current source IP
+		for dstIP, attempts := range dstMap {
+			// Clean up old connection attempts outside the window
+			cleanedAttempts := rule.cleanOldAttempts(attempts, now)
+
+			if len(cleanedAttempts) > 0 {
+				// If there are valid (non-expired) attempts, update the map
+				rule.ConnectionAttempts[srcIP][dstIP] = cleanedAttempts
+			} else {
+				// If no valid attempts remain, delete the dstIP entry
+				delete(rule.ConnectionAttempts[srcIP], dstIP)
+			}
+		}
+
+		// If no more destination IPs remain for the source IP, delete the srcIP entry
+		if len(rule.ConnectionAttempts[srcIP]) == 0 {
+			delete(rule.ConnectionAttempts, srcIP)
+		}
+	}
+}
+
+// StartCleanUpJob starts a background goroutine that runs the cleanUp function every 30 minutes.
+func (rule *PortScanningRule) startCleanUpJob() {
+	ticker := time.NewTicker(30 * time.Minute)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				rule.cleanUp() // Call the cleanUp function every 30 minutes
+			}
+		}
+	}()
+}

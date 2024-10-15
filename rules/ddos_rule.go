@@ -3,6 +3,7 @@ package rules
 import (
 	. "awesomeProject/model"
 	"awesomeProject/utils"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -15,13 +16,16 @@ type DDoSRule struct {
 	WindowDuration time.Duration          // Time window for evaluating requests
 }
 
-// NewDDoSRule initializes a new DDoSRule with the given threshold and window duration.
+// NewDDoSRule initializes a new DDoSRule with the given threshold and window duration and starts the cleanup job.
 func NewDDoSRule(threshold int, windowDuration time.Duration) *DDoSRule {
-	return &DDoSRule{
+	rule := &DDoSRule{
 		RequestLog:     make(map[string][]time.Time),
 		Threshold:      threshold,
 		WindowDuration: windowDuration,
 	}
+
+	rule.startCleanUpJob() // Start the cleanup job
+	return rule
 }
 
 // Detect analyzes packets to detect potential DDoS attempts.
@@ -66,4 +70,36 @@ func (rule *DDoSRule) cleanOldRequests(requests []time.Time, now time.Time) []ti
 	return utils.Filter(requests, func(timestamp time.Time) bool {
 		return now.Sub(timestamp) < rule.WindowDuration
 	})
+}
+
+// cleanUp removes old request logs for all source IPs that fall outside the window duration.
+func (rule *DDoSRule) cleanUp() {
+	rule.Lock()
+	defer rule.Unlock()
+
+	fmt.Print("CleanUp activated for DDoSRule\n")
+	now := time.Now()
+	for srcIP, requests := range rule.RequestLog {
+		// Clean old requests for each IP
+		rule.RequestLog[srcIP] = rule.cleanOldRequests(requests, now)
+
+		// If no valid requests remain, delete the IP entry
+		if len(rule.RequestLog[srcIP]) == 0 {
+			delete(rule.RequestLog, srcIP)
+		}
+	}
+}
+
+// StartCleanUpJob starts a background goroutine that runs the cleanUp function every 30 minutes.
+func (rule *DDoSRule) startCleanUpJob() {
+	ticker := time.NewTicker(30 * time.Minute) // Ticker triggers every 30 minutes
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				rule.cleanUp() // Call the cleanUp function on every tick
+			}
+		}
+	}()
 }
