@@ -47,7 +47,7 @@ func (rule *DDoSRule) Detect(packet *Packet) []*Incident {
 
 	// Detect if the request count exceeds the threshold
 	if len(requests) > rule.Threshold {
-		return []*Incident{NewIncident(packet.SrcIP, DDoSAttack, packet.Timestamp)}
+		return []*Incident{NewIncident(packet.SrcIP, DDoSAttack, packet.Timestamp, packet)}
 	}
 
 	return []*Incident{}

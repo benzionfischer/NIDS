@@ -54,7 +54,7 @@ func (rule *PortScanningRule) Detect(packet *Packet) []*Incident {
 
 	// Check if the number of attempts exceeds the threshold
 	if len(attempts) > rule.Threshold {
-		return []*Incident{NewIncident(packet.SrcIP, PortScanning, packet.Timestamp)}
+		return []*Incident{NewIncident(packet.SrcIP, PortScanning, packet.Timestamp, packet)}
 	}
 
 	return []*Incident{}
@@ -97,3 +97,7 @@ func (rule *PortScanningRule) updateAttempt(attempts []ConnectionAttempt, port s
 
 	return attempts
 }
+
+//func (rule *PortScanningRule) CleanUp() {
+//	Add cleanup function!!!
+//}

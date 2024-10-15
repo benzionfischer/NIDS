@@ -57,7 +57,7 @@ func (rule *LargeVolumeRule) Detect(packet *Packet) []*Incident {
 
 	// Check if the total volume exceeds the threshold
 	if totalVolume > rule.Threshold {
-		return []*Incident{NewIncident(packet.SrcIP, LargeVolumeTraffic, packet.Timestamp)}
+		return []*Incident{NewIncident(packet.SrcIP, LargeVolumeTraffic, packet.Timestamp, packet)}
 	}
 
 	// No large transfer detected
